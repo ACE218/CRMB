@@ -20,6 +20,7 @@ const errorHandler = require("./middleware/errorHandler");
 // Import routes
 const authRoutes = require("./routes/auth");
 const customerRoutes = require("./routes/customers");
+const employeeRoutes = require("./routes/employees");
 const inventoryRoutes = require("./routes/inventory");
 const billRoutes = require("./routes/bills");
 const offerRoutes = require("./routes/offers");
@@ -65,6 +66,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/customers", customerRoutes);
+app.use("/api/employees", employeeRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/bills", billRoutes);
 app.use("/api/offers", offerRoutes);

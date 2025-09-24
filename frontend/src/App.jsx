@@ -16,6 +16,8 @@ import RegisterPage from './pages/auth/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import CustomersPage from './pages/customers/CustomersPage'
 import CustomerDetailsPage from './pages/customers/CustomerDetailsPage'
+import EmployeesPage from './pages/employees/EmployeesPage'
+import EmployeeDetailsPage from './pages/employees/EmployeeDetailsPage'
 import InventoryPage from './pages/inventory/InventoryPage'
 import ProductDetailsPage from './pages/inventory/ProductDetailsPage'
 import BillingPage from './pages/billing/BillingPage'
@@ -83,6 +85,24 @@ function App() {
               element={
                 <ProtectedRoute>
                   <CustomerDetailsPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Employees */}
+            <Route 
+              path="/employees" 
+              element={
+                <ProtectedRoute>
+                  <EmployeesPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/employees/:id" 
+              element={
+                <ProtectedRoute>
+                  <EmployeeDetailsPage />
                 </ProtectedRoute>
               } 
             />

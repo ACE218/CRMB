@@ -23,6 +23,16 @@ export const customerService = {
   getCustomerAnalytics: (id) => api.get(`/customers/${id}/analytics`),
 }
 
+// Employee services
+export const employeeService = {
+  getEmployees: (params) => api.get('/employees', { params }),
+  getEmployee: (id) => api.get(`/employees/${id}`),
+  createEmployee: (data) => api.post('/employees', data),
+  updateEmployee: (id, data) => api.put(`/employees/${id}`, data),
+  deleteEmployee: (id) => api.delete(`/employees/${id}`),
+  getEmployeeStats: () => api.get('/employees/stats/overview'),
+}
+
 // Product/Inventory services
 export const inventoryService = {
   getProducts: (params) => api.get('/inventory', { params }),
@@ -73,6 +83,7 @@ export const analyticsService = {
 export default {
   auth: authService,
   customers: customerService,
+  employees: employeeService,
   inventory: inventoryService,
   bills: billService,
   offers: offerService,

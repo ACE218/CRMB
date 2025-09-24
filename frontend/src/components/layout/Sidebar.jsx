@@ -13,6 +13,7 @@ import {
 import {
   Dashboard,
   People,
+  Badge,
   Inventory2,
   Receipt,
   LocalOffer,
@@ -34,6 +35,11 @@ const menuItems = [
     text: 'Customers',
     icon: <People />,
     path: '/customers',
+  },
+  {
+    text: 'Employees',
+    icon: <Badge />,
+    path: '/employees',
   },
   {
     text: 'Inventory',

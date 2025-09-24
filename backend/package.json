@@ -7,7 +7,10 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "seed": "node src/seed.js",
+    "seed:employee": "node src/seedEmployee.js",
+    "verify:employee": "node src/verifyEmployee.js"
   },
   "keywords": [
     "crm",
