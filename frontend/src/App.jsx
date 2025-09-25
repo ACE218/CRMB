@@ -12,7 +12,6 @@ import ProtectedRoute from './components/auth/ProtectedRoute'
 
 // Pages
 import LoginPage from './pages/auth/LoginPage'
-import RegisterPage from './pages/auth/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import CustomersPage from './pages/customers/CustomersPage'
 import CustomerDetailsPage from './pages/customers/CustomerDetailsPage'
@@ -36,7 +35,6 @@ function App() {
       <Box sx={{ minHeight: '100vh' }}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Box>

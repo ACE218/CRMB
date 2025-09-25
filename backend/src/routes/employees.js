@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
 const Employee = require('../models/Employee');
-const { protect, authorize } = require('../middleware/auth');
+const { protectEmployee, authorizeEmployee } = require('../middleware/employeeAuth');
 
 const router = express.Router();
 
@@ -21,7 +21,7 @@ const validateRequest = (req, res, next) => {
 // @desc    Get all employees with pagination and filtering
 // @route   GET /api/employees
 // @access  Private (Staff only)
-router.get('/', protect, [
+router.get('/', protectEmployee, [
   query('page')
     .optional()
     .isInt({ min: 1 })
@@ -135,7 +135,7 @@ router.get('/', protect, [
 // @desc    Get employee by ID
 // @route   GET /api/employees/:id
 // @access  Private
-router.get('/:id', protect, async (req, res) => {
+router.get('/:id', protectEmployee, async (req, res) => {
   try {
     const employee = await Employee.findById(req.params.id).select('-password');
 
@@ -165,7 +165,7 @@ router.get('/:id', protect, async (req, res) => {
 // @desc    Create new employee
 // @route   POST /api/employees
 // @access  Private (Admin only)
-router.post('/', protect, authorize('admin'), [
+router.post('/', protectEmployee, authorizeEmployee('admin'), [
   body('firstName')
     .trim()
     .isLength({ min: 2, max: 50 })
@@ -260,7 +260,7 @@ router.post('/', protect, authorize('admin'), [
 // @desc    Update employee
 // @route   PUT /api/employees/:id
 // @access  Private (Admin only)
-router.put('/:id', protect, authorize('admin'), [
+router.put('/:id', protectEmployee, authorizeEmployee('admin'), [
   body('firstName')
     .optional()
     .trim()
@@ -364,10 +364,10 @@ router.put('/:id', protect, authorize('admin'), [
   }
 });
 
-// @desc    Delete employee
+// @desc    Permanently delete employee from database
 // @route   DELETE /api/employees/:id
 // @access  Private (Admin only)
-router.delete('/:id', protect, authorize('admin'), async (req, res) => {
+router.delete('/:id', protectEmployee, authorizeEmployee('admin'), async (req, res) => {
   try {
     const employee = await Employee.findById(req.params.id);
 
@@ -378,16 +378,12 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
       });
     }
 
-    // Soft delete by setting isActive to false
-    employee.isActive = false;
-    await employee.save();
+    // Hard delete - permanently remove from database
+    await Employee.findByIdAndDelete(req.params.id);
 
     res.json({
       success: true,
-      message: 'Employee deactivated successfully',
-      data: {
-        employee: await Employee.findById(employee._id).select('-password')
-      }
+      message: 'Employee deleted successfully from database'
     });
   } catch (error) {
     console.error('Delete employee error:', error);
@@ -402,7 +398,7 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
 // @desc    Get employee statistics
 // @route   GET /api/employees/stats/overview
 // @access  Private
-router.get('/stats/overview', protect, async (req, res) => {
+router.get('/stats/overview', protectEmployee, async (req, res) => {
   try {
     const [
       totalEmployees,

@@ -67,6 +67,7 @@ const EmployeesPage = () => {
     lastName: '',
     email: '',
     phone: '',
+    password: '',
     address: {
       street: '',
       city: '',
@@ -90,6 +91,49 @@ const EmployeesPage = () => {
   // Departments and roles
   const departments = ['sales', 'marketing', 'hr', 'finance', 'operations', 'it', 'management'];
   const roles = ['staff', 'manager', 'admin'];
+
+  // Form validation
+  const validateForm = () => {
+    const errors = [];
+
+    // Required fields validation
+    if (!formData.firstName.trim()) errors.push('First name is required');
+    if (!formData.lastName.trim()) errors.push('Last name is required');
+    if (!formData.email.trim()) errors.push('Email is required');
+    if (!formData.phone.trim()) errors.push('Phone is required');
+    if (!formData.address.street.trim()) errors.push('Street address is required');
+    if (!formData.address.city.trim()) errors.push('City is required');
+    if (!formData.address.state.trim()) errors.push('State is required');
+    if (!formData.address.zipCode.trim()) errors.push('ZIP code is required');
+    if (!formData.department) errors.push('Department is required');
+    if (!formData.position.trim()) errors.push('Position is required');
+    if (!formData.salary) errors.push('Salary is required');
+    if (!formData.emergencyContact.name.trim()) errors.push('Emergency contact name is required');
+    if (!formData.emergencyContact.phone.trim()) errors.push('Emergency contact phone is required');
+    if (!formData.emergencyContact.relationship.trim()) errors.push('Emergency contact relationship is required');
+
+    // Format validation
+    if (formData.phone && !/^[0-9]{10}$/.test(formData.phone)) {
+      errors.push('Phone must be exactly 10 digits');
+    }
+    if (formData.address.zipCode && !/^[0-9]{6}$/.test(formData.address.zipCode)) {
+      errors.push('ZIP code must be exactly 6 digits');
+    }
+    if (formData.emergencyContact.phone && !/^[0-9]{10}$/.test(formData.emergencyContact.phone)) {
+      errors.push('Emergency contact phone must be exactly 10 digits');
+    }
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.push('Please enter a valid email address');
+    }
+    if (formData.salary && (isNaN(formData.salary) || parseFloat(formData.salary) <= 0)) {
+      errors.push('Salary must be a positive number');
+    }
+    if (formData.performanceRating && (isNaN(formData.performanceRating) || parseFloat(formData.performanceRating) < 0 || parseFloat(formData.performanceRating) > 5)) {
+      errors.push('Performance rating must be between 0 and 5');
+    }
+
+    return errors;
+  };
 
   // Fetch employees
   const fetchEmployees = async () => {
@@ -127,14 +171,34 @@ const EmployeesPage = () => {
 
   // Handle create/edit employee
   const handleSave = async () => {
+    // Validate form
+    const validationErrors = validateForm();
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join(', '));
+      return;
+    }
+
     try {
       setLoading(true);
-      
+      setError('');
+
+      // Prepare data for submission
+      const submitData = {
+        ...formData,
+        salary: parseFloat(formData.salary),
+        performanceRating: formData.performanceRating ? parseFloat(formData.performanceRating) : undefined
+      };
+
+      // Remove password from update data for security
+      if (dialogMode === 'edit') {
+        delete submitData.password;
+      }
+
       if (dialogMode === 'create') {
-        await employeeService.createEmployee(formData);
+        await employeeService.createEmployee(submitData);
         setSuccess('Employee created successfully');
       } else {
-        await employeeService.updateEmployee(selectedEmployee._id, formData);
+        await employeeService.updateEmployee(selectedEmployee._id, submitData);
         setSuccess('Employee updated successfully');
       }
       
@@ -142,7 +206,8 @@ const EmployeesPage = () => {
       resetForm();
       fetchEmployees();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save employee');
+      const errorMessage = err.response?.data?.message || 'Failed to save employee';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -150,14 +215,14 @@ const EmployeesPage = () => {
 
   // Handle delete employee
   const handleDelete = async (employee) => {
-    if (window.confirm(`Are you sure you want to deactivate ${employee.firstName} ${employee.lastName}?`)) {
+    if (window.confirm(`Are you sure you want to permanently delete ${employee.firstName} ${employee.lastName}? This action cannot be undone.`)) {
       try {
         setLoading(true);
         await employeeService.deleteEmployee(employee._id);
-        setSuccess('Employee deactivated successfully');
+        setSuccess('Employee deleted successfully from database');
         fetchEmployees();
       } catch (err) {
-        setError('Failed to deactivate employee');
+        setError('Failed to delete employee');
       } finally {
         setLoading(false);
       }
@@ -168,6 +233,7 @@ const EmployeesPage = () => {
   const openCreateDialog = () => {
     setDialogMode('create');
     resetForm();
+    setError('');
     setOpenDialog(true);
   };
 
@@ -179,6 +245,7 @@ const EmployeesPage = () => {
       lastName: employee.lastName,
       email: employee.email,
       phone: employee.phone,
+      password: '', // Not shown in edit mode for security
       address: {
         street: employee.address?.street || '',
         city: employee.address?.city || '',
@@ -198,6 +265,7 @@ const EmployeesPage = () => {
       },
       isActive: employee.isActive
     });
+    setError('');
     setOpenDialog(true);
   };
 
@@ -207,6 +275,7 @@ const EmployeesPage = () => {
       lastName: '',
       email: '',
       phone: '',
+      password: '',
       address: {
         street: '',
         city: '',
@@ -446,7 +515,7 @@ const EmployeesPage = () => {
                           <EditIcon />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Deactivate">
+                      <Tooltip title="Delete Employee">
                         <IconButton
                           size="small"
                           onClick={() => handleDelete(employee)}
@@ -489,6 +558,11 @@ const EmployeesPage = () => {
           {dialogMode === 'create' ? 'Add New Employee' : 'Edit Employee'}
         </DialogTitle>
         <DialogContent>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
           <Grid container spacing={2} sx={{ mt: 1 }}>
             {/* Personal Information */}
             <Grid item xs={12}>
@@ -529,12 +603,29 @@ const EmployeesPage = () => {
             <Grid item xs={6}>
               <TextField
                 fullWidth
-                label="Phone"
+                label="Phone (10 digits)"
                 value={formData.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
                 required
+                inputProps={{ maxLength: 10, pattern: '[0-9]{10}' }}
+                helperText="Enter 10-digit mobile number"
               />
             </Grid>
+            
+            {dialogMode === 'create' && (
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  label="Password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  required
+                  inputProps={{ minLength: 6 }}
+                  helperText="Minimum 6 characters"
+                />
+              </Grid>
+            )}
 
             {/* Address */}
             <Grid item xs={12}>
@@ -547,6 +638,7 @@ const EmployeesPage = () => {
                 label="Street Address"
                 value={formData.address.street}
                 onChange={(e) => handleInputChange('address.street', e.target.value)}
+                required
               />
             </Grid>
             
@@ -556,6 +648,7 @@ const EmployeesPage = () => {
                 label="City"
                 value={formData.address.city}
                 onChange={(e) => handleInputChange('address.city', e.target.value)}
+                required
               />
             </Grid>
             
@@ -565,15 +658,19 @@ const EmployeesPage = () => {
                 label="State"
                 value={formData.address.state}
                 onChange={(e) => handleInputChange('address.state', e.target.value)}
+                required
               />
             </Grid>
             
             <Grid item xs={4}>
               <TextField
                 fullWidth
-                label="ZIP Code"
+                label="ZIP Code (6 digits)"
                 value={formData.address.zipCode}
                 onChange={(e) => handleInputChange('address.zipCode', e.target.value)}
+                required
+                inputProps={{ maxLength: 6, pattern: '[0-9]{6}' }}
+                helperText="Enter 6-digit ZIP code"
               />
             </Grid>
 
@@ -617,6 +714,7 @@ const EmployeesPage = () => {
                 value={formData.salary}
                 onChange={(e) => handleInputChange('salary', e.target.value)}
                 required
+                inputProps={{ min: 0, step: 0.01 }}
               />
             </Grid>
             
@@ -642,9 +740,10 @@ const EmployeesPage = () => {
                 fullWidth
                 label="Performance Rating (0-5)"
                 type="number"
-                inputProps={{ min: 0, max: 5, step: 0.1 }}
                 value={formData.performanceRating}
                 onChange={(e) => handleInputChange('performanceRating', e.target.value)}
+                inputProps={{ min: 0, max: 5, step: 0.1 }}
+                helperText="Optional: Rate from 0 to 5"
               />
             </Grid>
 
@@ -666,10 +765,12 @@ const EmployeesPage = () => {
             <Grid item xs={4}>
               <TextField
                 fullWidth
-                label="Emergency Contact Phone"
+                label="Emergency Contact Phone (10 digits)"
                 value={formData.emergencyContact.phone}
                 onChange={(e) => handleInputChange('emergencyContact.phone', e.target.value)}
                 required
+                inputProps={{ maxLength: 10, pattern: '[0-9]{10}' }}
+                helperText="Enter 10-digit mobile number"
               />
             </Grid>
             

@@ -6,7 +6,6 @@ import {
   TextField,
   Button,
   Typography,
-  Link,
   Alert,
   CircularProgress,
   InputAdornment,
@@ -17,9 +16,9 @@ import {
   Lock,
   Visibility,
   VisibilityOff,
-  Store,
+  AdminPanelSettings,
 } from '@mui/icons-material'
-import { useNavigate, Link as RouterLink } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
@@ -52,7 +51,7 @@ const LoginPage = () => {
 
   const onSubmit = async (data) => {
     const result = await login(data)
-    
+
     if (result.success) {
       toast.success('Login successful!')
       navigate('/dashboard')
@@ -89,7 +88,7 @@ const LoginPage = () => {
               mb: 3,
             }}
           >
-            <Store
+            <AdminPanelSettings
               sx={{
                 fontSize: 48,
                 color: 'primary.main',
@@ -97,10 +96,10 @@ const LoginPage = () => {
               }}
             />
             <Typography variant="h4" component="h1" gutterBottom>
-              CRMB System
+              Employee Login
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Customer Relationship Manager & Biller
+              CRMB System - Employee Portal
             </Typography>
           </Box>
 
@@ -174,15 +173,6 @@ const LoginPage = () => {
                 'Sign In'
               )}
             </Button>
-
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body2">
-                Don't have an account?{' '}
-                <Link component={RouterLink} to="/register">
-                  Sign up here
-                </Link>
-              </Typography>
-            </Box>
           </Box>
 
           {/* Demo Credentials */}
@@ -195,9 +185,9 @@ const LoginPage = () => {
             }}
           >
             <Typography variant="caption" color="text.secondary">
-              Demo Credentials:
+              Employee Demo Credentials:
               <br />
-              Email: admin@crmb.com
+              Email: modi.g@crmb.com
               <br />
               Password: admin123
             </Typography>
