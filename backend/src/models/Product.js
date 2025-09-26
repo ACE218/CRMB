@@ -96,9 +96,19 @@ const productSchema = new mongoose.Schema({
   },
   taxRate: {
     type: Number,
-    required: [true, 'Tax rate is required'],
     min: [0, 'Tax rate cannot be negative'],
-    max: [100, 'Tax rate cannot exceed 100%']
+    max: [100, 'Tax rate cannot exceed 100%'],
+    default: function() {
+      const taxRates = {
+        'GST_0': 0,
+        'GST_5': 5,
+        'GST_12': 12,
+        'GST_18': 18,
+        'GST_28': 28,
+        'EXEMPT': 0
+      };
+      return taxRates[this.taxCategory] || 18;
+    }
   },
   hsnCode: {
     type: String,
@@ -130,7 +140,7 @@ const productSchema = new mongoose.Schema({
   unit: {
     type: String,
     required: [true, 'Unit is required'],
-    enum: ['piece', 'kg', 'gram', 'liter', 'ml', 'meter', 'cm', 'dozen', 'pack', 'box'],
+    enum: ['piece', 'kg', 'gram', 'liter', 'ml', 'meter', 'cm', 'dozen', 'pack', 'box', 'bottle'],
     default: 'piece'
   },
 
@@ -304,8 +314,8 @@ productSchema.pre('save', function(next) {
 });
 
 // Pre-save middleware to set tax rate based on tax category
-productSchema.pre('save', function(next) {
-  if (this.isModified('taxCategory')) {
+productSchema.pre('validate', function(next) {
+  if (this.taxCategory && !this.taxRate) {
     const taxRates = {
       'GST_0': 0,
       'GST_5': 5,

@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
 const Product = require('../models/Product');
-const { protect, authorize } = require('../middleware/auth');
+const { protectEmployee } = require('../middleware/employeeAuth');
 
 const router = express.Router();
 
@@ -193,7 +193,7 @@ router.get('/:id', async (req, res) => {
 // @desc    Create new product
 // @route   POST /api/inventory
 // @access  Private (Staff only)
-router.post('/', protect, [
+router.post('/', protectEmployee, [
   body('name')
     .trim()
     .isLength({ min: 2, max: 100 })
@@ -212,6 +212,9 @@ router.post('/', protect, [
   body('basePrice')
     .isFloat({ min: 0 })
     .withMessage('Base price must be a positive number'),
+  body('sellingPrice')
+    .isFloat({ min: 0 })
+    .withMessage('Selling price must be a positive number'),
   body('costPrice')
     .isFloat({ min: 0 })
     .withMessage('Cost price must be a positive number'),
@@ -219,18 +222,23 @@ router.post('/', protect, [
     .isInt({ min: 0 })
     .withMessage('Stock quantity must be a non-negative integer'),
   body('unit')
-    .isIn(['piece', 'kg', 'gram', 'liter', 'ml', 'meter', 'cm', 'dozen', 'pack', 'box'])
+    .isIn(['piece', 'kg', 'gram', 'liter', 'ml', 'meter', 'cm', 'dozen', 'pack', 'box', 'bottle'])
     .withMessage('Invalid unit')
 ], validateRequest, async (req, res) => {
   try {
-    // Check if SKU already exists
-    const existingProduct = await Product.findOne({ sku: req.body.sku.toUpperCase() });
+    // Check if SKU already exists among active products
+    const existingProduct = await Product.findOne({ sku: req.body.sku.toUpperCase(), isActive: true });
 
     if (existingProduct) {
       return res.status(400).json({
         success: false,
         message: 'Product with this SKU already exists'
       });
+    }
+
+    // Handle empty barcode to avoid duplicate key error
+    if (req.body.barcode === "") {
+      req.body.barcode = undefined;
     }
 
     const product = await Product.create(req.body);
@@ -255,7 +263,7 @@ router.post('/', protect, [
 // @desc    Update product
 // @route   PUT /api/inventory/:id
 // @access  Private (Staff only)
-router.put('/:id', protect, [
+router.put('/:id', protectEmployee, [
   body('name')
     .optional()
     .trim()
@@ -288,11 +296,12 @@ router.put('/:id', protect, [
       });
     }
 
-    // If updating SKU, check for duplicates
+    // If updating SKU, check for duplicates among active products
     if (req.body.sku) {
       const duplicate = await Product.findOne({
         sku: req.body.sku.toUpperCase(),
-        _id: { $ne: req.params.id }
+        _id: { $ne: req.params.id },
+        isActive: true
       });
 
       if (duplicate) {
@@ -303,17 +312,30 @@ router.put('/:id', protect, [
       }
     }
 
-    const updatedProduct = await Product.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    // Update product fields manually to avoid validation issues
+    Object.keys(req.body).forEach(key => {
+      if (req.body[key] !== undefined) {
+        product[key] = req.body[key];
+      }
+    });
+
+    // Handle empty barcode to avoid duplicate key error
+    if (req.body.barcode === "") {
+      product.barcode = undefined;
+    }
+
+    // Ensure SKU is uppercase if provided
+    if (req.body.sku) {
+      product.sku = req.body.sku.toUpperCase();
+    }
+
+    await product.save();
 
     res.json({
       success: true,
       message: 'Product updated successfully',
       data: {
-        product: updatedProduct
+        product
       }
     });
   } catch (error) {
@@ -329,7 +351,7 @@ router.put('/:id', protect, [
 // @desc    Delete product (deactivate)
 // @route   DELETE /api/inventory/:id
 // @access  Private (Staff only)
-router.delete('/:id', protect, async (req, res) => {
+router.delete('/:id', protectEmployee, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
 
@@ -346,7 +368,7 @@ router.delete('/:id', protect, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Product deactivated successfully'
+      message: 'Product deleted successfully'
     });
   } catch (error) {
     console.error('Delete product error:', error);
@@ -361,7 +383,7 @@ router.delete('/:id', protect, async (req, res) => {
 // @desc    Update product stock
 // @route   PUT /api/inventory/:id/stock
 // @access  Private (Staff only)
-router.put('/:id/stock', protect, [
+router.put('/:id/stock', protectEmployee, [
   body('quantity')
     .isInt()
     .withMessage('Quantity must be an integer'),
@@ -436,7 +458,7 @@ router.put('/:id/stock', protect, [
 // @desc    Get products needing reorder
 // @route   GET /api/inventory/alerts/reorder
 // @access  Private (Staff only)
-router.get('/alerts/reorder', protect, async (req, res) => {
+router.get('/alerts/reorder', protectEmployee, async (req, res) => {
   try {
     const products = await Product.findNeedingReorder();
 
@@ -460,7 +482,7 @@ router.get('/alerts/reorder', protect, async (req, res) => {
 // @desc    Get expiring products
 // @route   GET /api/inventory/alerts/expiring
 // @access  Private (Staff only)
-router.get('/alerts/expiring', protect, [
+router.get('/alerts/expiring', protectEmployee, [
   query('days')
     .optional()
     .isInt({ min: 1, max: 30 })
@@ -491,7 +513,7 @@ router.get('/alerts/expiring', protect, [
 // @desc    Get top selling products
 // @route   GET /api/inventory/reports/top-selling
 // @access  Private
-router.get('/reports/top-selling', protect, [
+router.get('/reports/top-selling', protectEmployee, [
   query('limit')
     .optional()
     .isInt({ min: 1, max: 50 })
@@ -567,7 +589,7 @@ router.get('/meta/brands', async (req, res) => {
 // @desc    Search products by barcode
 // @route   GET /api/inventory/search/barcode/:barcode
 // @access  Private (Staff only)
-router.get('/search/barcode/:barcode', protect, async (req, res) => {
+router.get('/search/barcode/:barcode', protectEmployee, async (req, res) => {
   try {
     const product = await Product.findOne({
       barcode: req.params.barcode,
