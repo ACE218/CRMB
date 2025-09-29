@@ -11,6 +11,7 @@ export const authService = {
 export const customerService = {
   getCustomers: (params) => api.get('/customers', { params }),
   getCustomer: (id) => api.get(`/customers/${id}`),
+  getCustomerByPhone: (phone) => api.get(`/customers/phone/${phone}`),
   createCustomer: (data) => api.post('/customers', data),
   updateCustomer: (id, data) => api.put(`/customers/${id}`, data),
   deleteCustomer: (id) => api.delete(`/customers/${id}`),

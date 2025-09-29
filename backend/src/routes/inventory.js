@@ -24,12 +24,22 @@ const validateRequest = (req, res, next) => {
 router.get('/', [
   query('page')
     .optional()
+    .toInt()
     .isInt({ min: 1 })
     .withMessage('Page must be a positive integer'),
   query('limit')
     .optional()
-    .isInt({ min: 1, max: 100 })
-    .withMessage('Limit must be between 1 and 100'),
+    .toInt()
+    .isInt({ min: 1, max: 1000 })
+    .withMessage('Limit must be between 1 and 1000'),
+  query('sortBy')
+    .optional()
+    .isIn(['createdAt', 'name', 'price', 'stockQuantity'])
+    .withMessage('Invalid sort field'),
+  query('sortOrder')
+    .optional()
+    .isIn(['asc', 'desc'])
+    .withMessage('Sort order must be asc or desc'),
   query('search')
     .optional()
     .trim()
@@ -43,20 +53,24 @@ router.get('/', [
     .trim(),
   query('minPrice')
     .optional()
+    .toFloat()
     .isFloat({ min: 0 })
     .withMessage('Minimum price must be a positive number'),
   query('maxPrice')
     .optional()
+    .toFloat()
     .isFloat({ min: 0 })
     .withMessage('Maximum price must be a positive number'),
   query('inStock')
     .optional()
-    .isBoolean()
-    .withMessage('inStock must be a boolean'),
+    .isString()
+    .matches(/^(true|false)$/)
+    .withMessage('inStock must be "true" or "false"'),
   query('lowStock')
     .optional()
-    .isBoolean()
-    .withMessage('lowStock must be a boolean')
+    .isString()
+    .matches(/^(true|false)$/)
+    .withMessage('lowStock must be "true" or "false"')
 ], validateRequest, async (req, res) => {
   try {
     const {

@@ -561,4 +561,34 @@ router.get('/:id/analytics', protect, async (req, res) => {
   }
 });
 
+// @desc    Get customer by phone number
+// @route   GET /api/customers/phone/:phone
+// @access  Private
+router.get('/phone/:phone', protect, async (req, res) => {
+  try {
+    const customer = await Customer.findOne({ phone: req.params.phone }).select('-password');
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        customer
+      }
+    });
+  } catch (error) {
+    console.error('Get customer by phone error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching customer',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { Box } from '@mui/material'
+import { Box, CircularProgress } from '@mui/material'
 
 // Store
 import { useAuthStore } from './store/authStore'
@@ -28,6 +28,29 @@ import ProfilePage from './pages/ProfilePage'
 
 function App() {
   const { isAuthenticated } = useAuthStore()
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    // Wait for hydration to complete
+    const timer = setTimeout(() => setIsHydrated(true), 100)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Show loading while hydrating
+  if (!isHydrated) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh'
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    )
+  }
 
   // If not authenticated, show auth routes
   if (!isAuthenticated) {
